@@ -78,6 +78,10 @@ type Update struct {
 	// PreCheckoutQuery - Optional. New incoming pre-checkout query. Contains full information about checkout
 	PreCheckoutQuery *PreCheckoutQuery `json:"pre_checkout_query,omitempty"`
 
+	// PurchasedPaidMedia - Optional. A user purchased paid media with a non-empty payload sent by the bot in a
+	// non-channel chat
+	PurchasedPaidMedia *PaidMediaPurchased `json:"purchased_paid_media,omitempty"`
+
 	// Poll - Optional. New poll state. Bots receive only updates about manually stopped polls and polls, which
 	// are sent by the bot
 	Poll *Poll `json:"poll,omitempty"`
@@ -505,7 +509,10 @@ func (c *ChatFullInfo) UnmarshalJSON(data []byte) error {
 
 // Message - This object represents a message.
 type Message struct {
-	// MessageID - Unique message identifier inside this chat
+	// MessageID - Unique message identifier inside this chat. In specific instances (e.g., message containing a
+	// video sent to a big chat), the server might automatically schedule a message instead of sending it
+	// immediately. In such cases, this field will be 0 and the relevant message will be unusable until it is
+	// actually sent
 	MessageID int `json:"message_id"`
 
 	// MessageThreadID - Optional. Unique identifier of a message thread to which the message belongs; for
@@ -875,7 +882,9 @@ func (m *Message) iMaybeInaccessibleMessage() {}
 
 // MessageID - This object represents a unique message identifier.
 type MessageID struct {
-	// MessageID - Unique message identifier
+	// MessageID - Unique message identifier. In specific instances (e.g., message containing a video sent to a
+	// big chat), the server might automatically schedule a message instead of sending it immediately. In such
+	// cases, this field will be 0 and the relevant message will be unusable until it is actually sent
 	MessageID int `json:"message_id"`
 }
 
@@ -930,14 +939,15 @@ type MaybeInaccessibleMessage interface {
 // MessageEntity - This object represents one special entity in a text message. For example, hashtags,
 // usernames, URLs, etc.
 type MessageEntity struct {
-	// Type - Type of the entity. Currently, can be “mention” (@username), “hashtag” (#hashtag),
-	// “cashtag” ($USD), “bot_command” (/start@jobs_bot), “url” (https://telegram.org), “email”
-	// (do-not-reply@telegram.org), “phone_number” (+1-212-555-0123), “bold” (bold text), “italic”
-	// (italic text), “underline” (underlined text), “strikethrough” (strikethrough text), “spoiler”
-	// (spoiler message), “blockquote” (block quotation), “expandable_blockquote” (collapsed-by-default
-	// block quotation), “code” (monowidth string), “pre” (monowidth block), “text_link” (for clickable
-	// text URLs), “text_mention” (for users without usernames (https://telegram.org/blog/edit#new-mentions)),
-	// “custom_emoji” (for inline custom emoji stickers)
+	// Type - Type of the entity. Currently, can be “mention” (@username), “hashtag” (#hashtag or
+	// #hashtag@chatusername), “cashtag” ($USD or $USD@chatusername), “bot_command” (/start@jobs_bot),
+	// “url” (https://telegram.org), “email” (do-not-reply@telegram.org), “phone_number”
+	// (+1-212-555-0123), “bold” (bold text), “italic” (italic text), “underline” (underlined text),
+	// “strikethrough” (strikethrough text), “spoiler” (spoiler message), “blockquote” (block
+	// quotation), “expandable_blockquote” (collapsed-by-default block quotation), “code” (monowidth
+	// string), “pre” (monowidth block), “text_link” (for clickable text URLs), “text_mention” (for
+	// users without usernames (https://telegram.org/blog/edit#new-mentions)), “custom_emoji” (for inline custom
+	// emoji stickers)
 	Type string `json:"type"`
 
 	// Offset - Offset in UTF-16 code units (https://core.telegram.org/api/entities#entity-length) to the start
@@ -2004,7 +2014,7 @@ func (b *BackgroundTypeWallpaper) BackgroundType() string {
 
 func (b *BackgroundTypeWallpaper) iBackgroundType() {}
 
-// BackgroundTypePattern - The background is a PNG or TGV (gzipped subset of SVG with MIME type
+// BackgroundTypePattern - The background is a .PNG or .TGV (gzipped subset of SVG with MIME type
 // “application/x-tgwallpattern”) pattern to be combined with the background fill chosen by the user.
 type BackgroundTypePattern struct {
 	// Type - Type of the background, always “pattern”
@@ -2236,8 +2246,11 @@ type VideoChatParticipantsInvited struct {
 }
 
 // GiveawayCreated - This object represents a service message about the creation of a scheduled giveaway.
-// Currently holds no information.
-type GiveawayCreated struct{}
+type GiveawayCreated struct {
+	// PrizeStarCount - Optional. The number of Telegram Stars to be split between giveaway winners; for
+	// Telegram Star giveaways only
+	PrizeStarCount int `json:"prize_star_count,omitempty"`
+}
 
 // Giveaway - This object represents a message about a scheduled giveaway.
 type Giveaway struct {
@@ -2266,8 +2279,12 @@ type Giveaway struct {
 	// phone number that was bought on Fragment can always participate in giveaways.
 	CountryCodes []string `json:"country_codes,omitempty"`
 
+	// PrizeStarCount - Optional. The number of Telegram Stars to be split between giveaway winners; for
+	// Telegram Star giveaways only
+	PrizeStarCount int `json:"prize_star_count,omitempty"`
+
 	// PremiumSubscriptionMonthCount - Optional. The number of months the Telegram Premium subscription won from
-	// the giveaway will be active for
+	// the giveaway will be active for; for Telegram Premium giveaways only
 	PremiumSubscriptionMonthCount int `json:"premium_subscription_month_count,omitempty"`
 }
 
@@ -2292,8 +2309,12 @@ type GiveawayWinners struct {
 	// for the giveaway
 	AdditionalChatCount int `json:"additional_chat_count,omitempty"`
 
+	// PrizeStarCount - Optional. The number of Telegram Stars that were split between giveaway winners; for
+	// Telegram Star giveaways only
+	PrizeStarCount int `json:"prize_star_count,omitempty"`
+
 	// PremiumSubscriptionMonthCount - Optional. The number of months the Telegram Premium subscription won from
-	// the giveaway will be active for
+	// the giveaway will be active for; for Telegram Premium giveaways only
 	PremiumSubscriptionMonthCount int `json:"premium_subscription_month_count,omitempty"`
 
 	// UnclaimedPrizeCount - Optional. Number of undistributed prizes
@@ -2321,6 +2342,10 @@ type GiveawayCompleted struct {
 
 	// GiveawayMessage - Optional. Message with the giveaway that was completed, if it wasn't deleted
 	GiveawayMessage *Message `json:"giveaway_message,omitempty"`
+
+	// IsStarGiveaway - Optional. True, if the giveaway is a Telegram Star giveaway. Otherwise, currently, the
+	// giveaway is a Telegram Premium giveaway.
+	IsStarGiveaway bool `json:"is_star_giveaway,omitempty"`
 }
 
 // LinkPreviewOptions - Describes the options used for link preview generation.
@@ -2652,6 +2677,9 @@ type InlineKeyboardButton struct {
 	// query in the input field. Not supported for messages sent on behalf of a Telegram Business account.
 	SwitchInlineQueryChosenChat *SwitchInlineQueryChosenChat `json:"switch_inline_query_chosen_chat,omitempty"`
 
+	// CopyText - Optional. Description of the button that copies the specified text to the clipboard.
+	CopyText *CopyTextButton `json:"copy_text,omitempty"`
+
 	// CallbackGame - Optional. Description of the game that will be launched when the user presses the button.
 	// NOTE: This type of button must always be the first button in the first row.
 	CallbackGame *CallbackGame `json:"callback_game,omitempty"`
@@ -2714,6 +2742,13 @@ type SwitchInlineQueryChosenChat struct {
 
 	// AllowChannelChats - Optional. True, if channel chats can be chosen
 	AllowChannelChats bool `json:"allow_channel_chats,omitempty"`
+}
+
+// CopyTextButton - This object represents an inline keyboard button that copies specified text to the
+// clipboard.
+type CopyTextButton struct {
+	// Text - The text to be copied to the clipboard; 1-256 characters
+	Text string `json:"text"`
 }
 
 // CallbackQuery - This object represents an incoming callback query from a callback button in an inline
@@ -3752,7 +3787,7 @@ type BotCommand struct {
 }
 
 // ChatID - Represents chat ID as int64 or string
-type ChatID struct {
+type ChatID struct { //nolint:recvcheck
 	// ID - Unique identifier for the target chat
 	ID int64
 
@@ -3785,6 +3820,14 @@ func (c ChatID) MarshalJSON() ([]byte, error) {
 	}
 
 	return []byte(`""`), nil
+}
+
+// UnmarshalJSON parses JSON to ChatID
+func (c *ChatID) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &c.ID); err == nil {
+		return nil
+	}
+	return json.Unmarshal(data, &c.Username)
 }
 
 // BotCommandScope - This object represents the scope to which bot commands are applied. Currently, the
@@ -4109,8 +4152,9 @@ func (b *ChatBoostSourceGiftCode) BoostSource() string {
 
 func (b *ChatBoostSourceGiftCode) iChatBoostSource() {}
 
-// ChatBoostSourceGiveaway - The boost was obtained by the creation of a Telegram Premium giveaway. This
-// boosts the chat 4 times for the duration of the corresponding Telegram Premium subscription.
+// ChatBoostSourceGiveaway - The boost was obtained by the creation of a Telegram Premium or a Telegram Star
+// giveaway. This boosts the chat 4 times for the duration of the corresponding Telegram Premium subscription
+// for Telegram Premium giveaways and prize_star_count / 500 times for one year for Telegram Star giveaways.
 type ChatBoostSourceGiveaway struct {
 	// Source - Source of the boost, always “giveaway”
 	Source string `json:"source"`
@@ -4119,8 +4163,12 @@ type ChatBoostSourceGiveaway struct {
 	// deleted already. May be 0 if the message isn't sent yet.
 	GiveawayMessageID int `json:"giveaway_message_id"`
 
-	// User - Optional. User that won the prize in the giveaway if any
+	// User - Optional. User that won the prize in the giveaway if any; for Telegram Premium giveaways only
 	User *User `json:"user,omitempty"`
+
+	// PrizeStarCount - Optional. The number of Telegram Stars to be split between giveaway winners; for
+	// Telegram Star giveaways only
+	PrizeStarCount int `json:"prize_star_count,omitempty"`
 
 	// IsUnclaimed - Optional. True, if the giveaway was completed, but there was no user to win the prize
 	IsUnclaimed bool `json:"is_unclaimed,omitempty"`
@@ -4859,7 +4907,7 @@ type InputSticker struct {
 	Sticker InputFile `json:"sticker"`
 
 	// Format - Format of the added sticker, must be one of “static” for a .WEBP or .PNG image,
-	// “animated” for a .TGS animation, “video” for a WEBM video
+	// “animated” for a .TGS animation, “video” for a .WEBM video
 	Format string `json:"format"`
 
 	// EmojiList - List of 1-20 emoji associated with the sticker
@@ -4879,6 +4927,36 @@ const (
 	StickerAnimated = "animated"
 	StickerVideo    = "video"
 )
+
+// Gift - This object represents a gift that can be sent by the bot.
+type Gift struct {
+	// ID - Unique identifier of the gift
+	ID string `json:"id"`
+
+	// Sticker - The sticker that represents the gift
+	Sticker Sticker `json:"sticker"`
+
+	// StarCount - The number of Telegram Stars that must be paid to send the sticker
+	StarCount int `json:"star_count"`
+
+	// UpgradeStarCount - Optional. The number of Telegram Stars that must be paid to upgrade the gift to a
+	// unique one
+	UpgradeStarCount int `json:"upgrade_star_count,omitempty"`
+
+	// TotalCount - Optional. The total number of the gifts of this type that can be sent; for limited gifts
+	// only
+	TotalCount int `json:"total_count,omitempty"`
+
+	// RemainingCount - Optional. The number of remaining gifts of this type that can be sent; for limited gifts
+	// only
+	RemainingCount int `json:"remaining_count,omitempty"`
+}
+
+// Gifts - This object represent a list of gifts.
+type Gifts struct {
+	// Gifts - The list of gifts
+	Gifts []Gift `json:"gifts"`
+}
 
 // InlineQuery - This object represents an incoming inline query. When the user sends an empty query, your
 // bot could return some default or trending results.
@@ -4997,9 +5075,6 @@ type InlineQueryResultArticle struct {
 	// URL - Optional. URL of the result
 	URL string `json:"url,omitempty"`
 
-	// HideURL - Optional. Pass True if you don't want the URL to be shown in the message
-	HideURL bool `json:"hide_url,omitempty"`
-
 	// Description - Optional. Short description of the result
 	Description string `json:"description,omitempty"`
 
@@ -5087,7 +5162,7 @@ type InlineQueryResultGif struct {
 	// ID - Unique identifier for this result, 1-64 bytes
 	ID string `json:"id"`
 
-	// GifURL - A valid URL for the GIF file. File size must not exceed 1MB
+	// GifURL - A valid URL for the GIF file
 	GifURL string `json:"gif_url"`
 
 	// GifWidth - Optional. Width of the GIF
@@ -5158,7 +5233,7 @@ type InlineQueryResultMpeg4Gif struct {
 	// ID - Unique identifier for this result, 1-64 bytes
 	ID string `json:"id"`
 
-	// Mpeg4URL - A valid URL for the MPEG4 file. File size must not exceed 1MB
+	// Mpeg4URL - A valid URL for the MPEG4 file
 	Mpeg4URL string `json:"mpeg4_url"`
 
 	// Mpeg4Width - Optional. Video width
@@ -6105,8 +6180,8 @@ type InputInvoiceMessageContent struct {
 	// Description - Product description, 1-255 characters
 	Description string `json:"description"`
 
-	// Payload - Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use for your
-	// internal processes.
+	// Payload - Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use it for
+	// your internal processes.
 	Payload string `json:"payload"`
 
 	// ProviderToken - Optional. Payment provider token, obtained via @BotFather (https://t.me/botfather). Pass
@@ -6219,6 +6294,16 @@ type SentWebAppMessage struct {
 	InlineMessageID string `json:"inline_message_id,omitempty"`
 }
 
+// PreparedInlineMessage - Describes an inline message to be sent by a user of a Mini App.
+type PreparedInlineMessage struct {
+	// ID - Unique identifier of the prepared message
+	ID string `json:"id"`
+
+	// ExpirationDate - Expiration date of the prepared message, in Unix time. Expired prepared messages can no
+	// longer be used
+	ExpirationDate int64 `json:"expiration_date"`
+}
+
 // LabeledPrice - This object represents a portion of the price for goods or services.
 type LabeledPrice struct {
 	// Label - Portion label
@@ -6303,7 +6388,9 @@ type ShippingOption struct {
 	Prices []LabeledPrice `json:"prices"`
 }
 
-// SuccessfulPayment - This object contains basic information about a successful payment.
+// SuccessfulPayment - This object contains basic information about a successful payment. Note that if the
+// buyer initiates a chargeback with the relevant payment provider following this transaction, the funds may be
+// debited from your balance. This is outside of Telegram's control.
 type SuccessfulPayment struct {
 	// Currency - Three-letter ISO 4217 currency (https://core.telegram.org/bots/payments#supported-currencies)
 	// code, or “XTR” for payments in Telegram Stars (https://t.me/BotNews/90)
@@ -6317,6 +6404,16 @@ type SuccessfulPayment struct {
 
 	// InvoicePayload - Bot-specified invoice payload
 	InvoicePayload string `json:"invoice_payload"`
+
+	// SubscriptionExpirationDate - Optional. Expiration date of the subscription, in Unix time; for recurring
+	// payments only
+	SubscriptionExpirationDate int64 `json:"subscription_expiration_date,omitempty"`
+
+	// IsRecurring - Optional. True, if the payment is a recurring payment for a subscription
+	IsRecurring bool `json:"is_recurring,omitempty"`
+
+	// IsFirstRecurring - Optional. True, if the payment is the first payment for a subscription
+	IsFirstRecurring bool `json:"is_first_recurring,omitempty"`
 
 	// ShippingOptionID - Optional. Identifier of the shipping option chosen by the user
 	ShippingOptionID string `json:"shipping_option_id,omitempty"`
@@ -6396,6 +6493,15 @@ type PreCheckoutQuery struct {
 	OrderInfo *OrderInfo `json:"order_info,omitempty"`
 }
 
+// PaidMediaPurchased - This object contains information about a paid media purchase.
+type PaidMediaPurchased struct {
+	// From - User who purchased the media
+	From User `json:"from"`
+
+	// PaidMediaPayload - Bot-specified paid media payload
+	PaidMediaPayload string `json:"paid_media_payload"`
+}
+
 // RevenueWithdrawalState - This object describes the state of a revenue withdrawal operation. Currently, it
 // can be one of
 // RevenueWithdrawalStatePending (https://core.telegram.org/bots/api#revenuewithdrawalstatepending)
@@ -6459,11 +6565,35 @@ func (r *RevenueWithdrawalStateFailed) WithdrawalState() string {
 
 func (r *RevenueWithdrawalStateFailed) iRevenueWithdrawalState() {}
 
+// AffiliateInfo - Contains information about the affiliate that received a commission via this transaction.
+type AffiliateInfo struct {
+	// AffiliateUser - Optional. The bot or the user that received an affiliate commission if it was received by
+	// a bot or a user
+	AffiliateUser *User `json:"affiliate_user,omitempty"`
+
+	// AffiliateChat - Optional. The chat that received an affiliate commission if it was received by a chat
+	AffiliateChat *Chat `json:"affiliate_chat,omitempty"`
+
+	// CommissionPerMille - The number of Telegram Stars received by the affiliate for each 1000 Telegram Stars
+	// received by the bot from referred users
+	CommissionPerMille int `json:"commission_per_mille"`
+
+	// Amount - Integer amount of Telegram Stars received by the affiliate from the transaction, rounded to 0;
+	// can be negative for refunds
+	Amount int `json:"amount"`
+
+	// NanostarAmount - Optional. The number of 1/1000000000 shares of Telegram Stars received by the affiliate;
+	// from -999999999 to 999999999; can be negative for refunds
+	NanostarAmount int `json:"nanostar_amount,omitempty"`
+}
+
 // TransactionPartner - This object describes the source of a transaction, or its recipient for outgoing
 // transactions. Currently, it can be one of
 // TransactionPartnerUser (https://core.telegram.org/bots/api#transactionpartneruser)
+// TransactionPartnerAffiliateProgram (https://core.telegram.org/bots/api#transactionpartneraffiliateprogram)
 // TransactionPartnerFragment (https://core.telegram.org/bots/api#transactionpartnerfragment)
 // TransactionPartnerTelegramAds (https://core.telegram.org/bots/api#transactionpartnertelegramads)
+// TransactionPartnerTelegramApi (https://core.telegram.org/bots/api#transactionpartnertelegramapi)
 // TransactionPartnerOther (https://core.telegram.org/bots/api#transactionpartnerother)
 type TransactionPartner interface {
 	PartnerType() string
@@ -6473,10 +6603,12 @@ type TransactionPartner interface {
 
 // Transaction partner types
 const (
-	PartnerTypeUser        = "user"
-	PartnerTypeFragment    = "fragment"
-	PartnerTypeTelegramAds = "telegram_ads"
-	PartnerTypeOther       = "other"
+	PartnerTypeUser             = "user"
+	PartnerTypeAffiliateProgram = "affiliate_program"
+	PartnerTypeFragment         = "fragment"
+	PartnerTypeTelegramAds      = "telegram_ads"
+	PartnerTypeTelegramApi      = "telegram_api" //nolint:revive,stylecheck
+	PartnerTypeOther            = "other"
 )
 
 // TransactionPartnerUser - Describes a transaction with a user.
@@ -6487,11 +6619,23 @@ type TransactionPartnerUser struct {
 	// User - Information about the user
 	User User `json:"user"`
 
+	// Affiliate - Optional. Information about the affiliate that received a commission via this transaction
+	Affiliate *AffiliateInfo `json:"affiliate,omitempty"`
+
 	// InvoicePayload - Optional. Bot-specified invoice payload
 	InvoicePayload string `json:"invoice_payload,omitempty"`
 
+	// SubscriptionPeriod - Optional. The duration of the paid subscription
+	SubscriptionPeriod int `json:"subscription_period,omitempty"`
+
 	// PaidMedia - Optional. Information about the paid media bought by the user
 	PaidMedia []PaidMedia `json:"paid_media,omitempty"`
+
+	// PaidMediaPayload - Optional. Bot-specified paid media payload
+	PaidMediaPayload string `json:"paid_media_payload,omitempty"`
+
+	// Gift - Optional. The gift sent to the user by the bot
+	Gift *Gift `json:"gift,omitempty"`
 }
 
 // PartnerType returns TransactionPartner type
@@ -6540,6 +6684,27 @@ func (p *TransactionPartnerUser) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// TransactionPartnerAffiliateProgram - Describes the affiliate program that issued the affiliate commission
+// received via this transaction.
+type TransactionPartnerAffiliateProgram struct {
+	// Type - Type of the transaction partner, always “affiliate_program”
+	Type string `json:"type"`
+
+	// SponsorUser - Optional. Information about the bot that sponsored the affiliate program
+	SponsorUser *User `json:"sponsor_user,omitempty"`
+
+	// CommissionPerMille - The number of Telegram Stars received by the bot for each 1000 Telegram Stars
+	// received by the affiliate program sponsor from referred users
+	CommissionPerMille int `json:"commission_per_mille"`
+}
+
+// PartnerType returns TransactionPartner type
+func (p *TransactionPartnerAffiliateProgram) PartnerType() string {
+	return PartnerTypeAffiliateProgram
+}
+
+func (p *TransactionPartnerAffiliateProgram) iTransactionPartner() {}
+
 // TransactionPartnerFragment - Describes a withdrawal transaction with Fragment.
 type TransactionPartnerFragment struct {
 	// Type - Type of the transaction partner, always “fragment”
@@ -6569,6 +6734,23 @@ func (p *TransactionPartnerTelegramAds) PartnerType() string {
 
 func (p *TransactionPartnerTelegramAds) iTransactionPartner() {}
 
+// TransactionPartnerTelegramApi - Describes a transaction with payment for paid broadcasting
+// (https://core.telegram.org/bots/api#paid-broadcasts).
+type TransactionPartnerTelegramApi struct { //nolint:revive,stylecheck
+	// Type - Type of the transaction partner, always “telegram_api”
+	Type string `json:"type"`
+
+	// RequestCount - The number of successful requests that exceeded regular limits and were therefore billed
+	RequestCount int `json:"request_count"`
+}
+
+// PartnerType returns TransactionPartner type
+func (p *TransactionPartnerTelegramApi) PartnerType() string {
+	return PartnerTypeTelegramApi
+}
+
+func (p *TransactionPartnerTelegramApi) iTransactionPartner() {}
+
 // TransactionPartnerOther - Describes a transaction with an unknown source or recipient.
 type TransactionPartnerOther struct {
 	// Type - Type of the transaction partner, always “other”
@@ -6582,15 +6764,21 @@ func (p *TransactionPartnerOther) PartnerType() string {
 
 func (p *TransactionPartnerOther) iTransactionPartner() {}
 
-// StarTransaction - Describes a Telegram Star transaction.
+// StarTransaction - Describes a Telegram Star transaction. Note that if the buyer initiates a chargeback
+// with the payment provider from whom they acquired Stars (e.g., Apple, Google) following this transaction, the
+// refunded Stars will be deducted from the bot's balance. This is outside of Telegram's control.
 type StarTransaction struct {
 	// ID - Unique identifier of the transaction. Coincides with the identifier of the original transaction for
 	// refund transactions. Coincides with SuccessfulPayment.telegram_payment_charge_id for successful incoming
 	// payments from users.
 	ID string `json:"id"`
 
-	// Amount - Number of Telegram Stars transferred by the transaction
+	// Amount - Integer amount of Telegram Stars transferred by the transaction
 	Amount int `json:"amount"`
+
+	// NanostarAmount - Optional. The number of 1/1000000000 shares of Telegram Stars transferred by the
+	// transaction; from 0 to 999999999
+	NanostarAmount int `json:"nanostar_amount,omitempty"`
 
 	// Date - Date the transaction was created in Unix time
 	Date int64 `json:"date"`
@@ -6605,7 +6793,7 @@ type StarTransaction struct {
 }
 
 // UnmarshalJSON converts JSON to Chat
-func (t *StarTransaction) UnmarshalJSON(data []byte) error {
+func (t *StarTransaction) UnmarshalJSON(data []byte) error { //nolint:gocyclo,revive,cyclop,funlen
 	parser := json.ParserPoll.Get()
 	defer json.ParserPoll.Put(parser)
 
@@ -6622,10 +6810,14 @@ func (t *StarTransaction) UnmarshalJSON(data []byte) error {
 		switch partnerType {
 		case PartnerTypeUser:
 			ut.Source = &TransactionPartnerUser{}
+		case PartnerTypeAffiliateProgram:
+			ut.Source = &TransactionPartnerAffiliateProgram{}
 		case PartnerTypeFragment:
 			ut.Source = &TransactionPartnerFragment{}
 		case PartnerTypeTelegramAds:
 			ut.Source = &TransactionPartnerTelegramAds{}
+		case PartnerTypeTelegramApi:
+			ut.Source = &TransactionPartnerTelegramApi{}
 		case PartnerTypeOther:
 			ut.Source = &TransactionPartnerOther{}
 		default:
@@ -6638,10 +6830,14 @@ func (t *StarTransaction) UnmarshalJSON(data []byte) error {
 		switch partnerType {
 		case PartnerTypeUser:
 			ut.Receiver = &TransactionPartnerUser{}
+		case PartnerTypeAffiliateProgram:
+			ut.Receiver = &TransactionPartnerAffiliateProgram{}
 		case PartnerTypeFragment:
 			ut.Receiver = &TransactionPartnerFragment{}
 		case PartnerTypeTelegramAds:
 			ut.Receiver = &TransactionPartnerTelegramAds{}
+		case PartnerTypeTelegramApi:
+			ut.Receiver = &TransactionPartnerTelegramApi{}
 		case PartnerTypeOther:
 			ut.Receiver = &TransactionPartnerOther{}
 		default:
