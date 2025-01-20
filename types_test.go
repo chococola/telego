@@ -241,11 +241,17 @@ func TestTypesInterfaces(t *testing.T) {
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerUser{})
 	assert.Equal(t, PartnerTypeUser, (&TransactionPartnerUser{}).PartnerType())
 
+	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerAffiliateProgram{})
+	assert.Equal(t, PartnerTypeAffiliateProgram, (&TransactionPartnerAffiliateProgram{}).PartnerType())
+
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerFragment{})
 	assert.Equal(t, PartnerTypeFragment, (&TransactionPartnerFragment{}).PartnerType())
 
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerTelegramAds{})
 	assert.Equal(t, PartnerTypeTelegramAds, (&TransactionPartnerTelegramAds{}).PartnerType())
+
+	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerTelegramApi{})
+	assert.Equal(t, PartnerTypeTelegramApi, (&TransactionPartnerTelegramApi{}).PartnerType())
 
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerOther{})
 	assert.Equal(t, PartnerTypeOther, (&TransactionPartnerOther{}).PartnerType())
@@ -524,6 +530,51 @@ func TestChatID_MarshalJSON(t *testing.T) {
 	}
 }
 
+func TestChatID_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		jsonData string
+		chatID   ChatID
+		isError  bool
+	}{
+		{
+			name:     "empty",
+			jsonData: `""`,
+			chatID:   ChatID{},
+			isError:  false,
+		},
+		{
+			name:     "success_id",
+			jsonData: "123",
+			chatID: ChatID{
+				ID: 123,
+			},
+			isError: false,
+		},
+		{
+			name:     "success_username",
+			jsonData: `"test"`,
+			chatID: ChatID{
+				Username: "test",
+			},
+			isError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var chatID ChatID
+			err := chatID.UnmarshalJSON([]byte(tt.jsonData))
+			if tt.isError {
+				require.Error(t, err)
+				assert.Nil(t, data)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.chatID, chatID)
+		})
+	}
+}
+
 func TestInputFile_MarshalJSON(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -725,7 +776,8 @@ func TestTypesConstants(t *testing.T) {
 			WithdrawalStatePending, WithdrawalStateSucceeded, WithdrawalStateFailed,
 		},
 		{
-			PartnerTypeUser, PartnerTypeFragment, PartnerTypeTelegramAds, PartnerTypeOther,
+			PartnerTypeUser, PartnerTypeAffiliateProgram, PartnerTypeFragment, PartnerTypeTelegramAds,
+			PartnerTypeTelegramApi, PartnerTypeOther,
 		},
 		{
 			ElementTypePersonalDetails, ElementTypePassport, ElementTypeDriverLicense, ElementTypeIdentityCard,
