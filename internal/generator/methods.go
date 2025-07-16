@@ -70,23 +70,16 @@ const methodParameterPattern = `
 </tr>
 `
 
-const (
-	returnTypePattern1 = `[Rr]eturns [a-z ]*?((?:[Aa]rray of |)[A-Z]\w+)`
-	returnTypePattern2 = `((?:[Aa]rray of |)[A-Z]\w+)[a-z ]*?returned`
-)
-
 const returnTypeNotFound = "NOT_FOUND"
-
-const curInternalFuncPattern = `^func \(.+?\) [a-z]\w+\(`
 
 var (
 	methodRegexp          = regexp.MustCompile(preparePattern(methodPattern))
 	methodParameterRegexp = regexp.MustCompile(preparePattern(methodParameterPattern))
 
-	returnTypeRegexp1 = regexp.MustCompile(returnTypePattern1)
-	returnTypeRegexp2 = regexp.MustCompile(returnTypePattern2)
+	returnTypeRegexp1 = regexp.MustCompile(`[Rr]eturns [a-z ]*?((?:[Aa]rray of |)[A-Z]\w+)`)
+	returnTypeRegexp2 = regexp.MustCompile(`((?:[Aa]rray of |)[A-Z]\w+)[a-z ]*?returned`)
 
-	curInternalFuncRegexp = regexp.MustCompile(curInternalFuncPattern)
+	curInternalFuncRegexp = regexp.MustCompile(`^func \(.+?\) [a-z]\w+\(`)
 )
 
 func generateMethods(docs string) tgMethods {
@@ -292,7 +285,11 @@ import (
 			returnsNotFoundCount++
 		}
 
-		data.WriteString(fmt.Sprintf("\nfunc (b *Bot) %s(%s) %s {\n", m.nameTitle, parametersArg, returnType))
+		if parametersArg != "" {
+			parametersArg = ", " + parametersArg
+		}
+
+		data.WriteString(fmt.Sprintf("\nfunc (b *Bot) %s(ctx context.Context%s) %s {\n", m.nameTitle, parametersArg, returnType))
 
 		returnVar := returnTypeToVar(m.returnType)
 		switch m.nameTitle {
@@ -315,21 +312,21 @@ import (
 			}
 
 			if len(m.parameters) > 0 {
-				data.WriteString(fmt.Sprintf("\terr := b.performRequest(\"%s\", params, &%s%s)\n", m.name, returnVar, successValue))
+				data.WriteString(fmt.Sprintf("\terr := b.performRequest(ctx, \"%s\", params, &%s%s)\n", m.name, returnVar, successValue))
 			} else {
-				data.WriteString(fmt.Sprintf("\terr := b.performRequest(\"%s\", nil, &%s%s)\n", m.name, returnVar, successValue))
+				data.WriteString(fmt.Sprintf("\terr := b.performRequest(ctx, \"%s\", nil, &%s%s)\n", m.name, returnVar, successValue))
 			}
 
-			data.WriteString(fmt.Sprintf("\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"telego: %s(): %%w\", err)\n\t}\n\n", m.name))
+			data.WriteString(fmt.Sprintf("\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"telego: %s: %%w\", err)\n\t}\n", m.name))
 			data.WriteString(fmt.Sprintf("\treturn %s, nil\n}\n\n", returnVar))
 		} else {
 			if len(m.parameters) > 0 {
-				data.WriteString(fmt.Sprintf("\terr := b.performRequest(\"%s\", params)\n", m.name))
+				data.WriteString(fmt.Sprintf("\terr := b.performRequest(ctx, \"%s\", params)\n", m.name))
 			} else {
-				data.WriteString(fmt.Sprintf("\terr := b.performRequest(\"%s\", nil)\n", m.name))
+				data.WriteString(fmt.Sprintf("\terr := b.performRequest(ctx, \"%s\", nil)\n", m.name))
 			}
 
-			data.WriteString(fmt.Sprintf("\tif err != nil {\n\t\treturn fmt.Errorf(\"telego: %s(): %%w\", err)\n\t}\n\n", m.name))
+			data.WriteString(fmt.Sprintf("\tif err != nil {\n\t\treturn fmt.Errorf(\"telego: %s: %%w\", err)\n\t}\n", m.name))
 			data.WriteString("\treturn nil\n}\n\n")
 		}
 	}
@@ -358,8 +355,8 @@ func parameterSpecialCases(parameter *tgMethodParameter, methodName string) {
 		parameter.typ = "[]InputMedia"
 	}
 
-	if (parameter.name == "UserId" || parameter.name == "ChatId" || parameter.name == "SenderChatId" ||
-		strings.Contains(parameter.description, "number of seconds")) &&
+	if (parameter.name == "UserId" || parameter.name == "ChatId" || parameter.name == "NewOwnerChatId" ||
+		parameter.name == "SenderChatId" || strings.Contains(parameter.description, "number of seconds")) &&
 		parameter.typ == "int" {
 		parameter.typ = "int64"
 	}
@@ -397,6 +394,8 @@ func parameterSpecialCases(parameter *tgMethodParameter, methodName string) {
 func parseReturnType(methodDescription string) string {
 	methodDescription = removeHTML(methodDescription)
 	var returnType string
+
+	methodDescription = strings.TrimPrefix(methodDescription, "Returns ")
 
 	returns1 := returnTypeRegexp1.FindStringSubmatch(methodDescription)
 	if len(returns1) != 0 {

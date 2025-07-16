@@ -1,7 +1,6 @@
 package telego
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -85,6 +84,21 @@ func TestTypesInterfaces(t *testing.T) {
 	assert.Implements(t, (*ChatMember)(nil), &ChatMemberBanned{})
 	assert.Equal(t, MemberStatusBanned, (&ChatMemberBanned{}).MemberStatus())
 
+	assert.Implements(t, (*StoryAreaType)(nil), &StoryAreaTypeLocation{})
+	assert.Equal(t, StoryAreaLocation, (&StoryAreaTypeLocation{}).StoryAreaType())
+
+	assert.Implements(t, (*StoryAreaType)(nil), &StoryAreaTypeSuggestedReaction{})
+	assert.Equal(t, StoryAreaSuggestedReaction, (&StoryAreaTypeSuggestedReaction{}).StoryAreaType())
+
+	assert.Implements(t, (*StoryAreaType)(nil), &StoryAreaTypeLink{})
+	assert.Equal(t, StoryAreaLink, (&StoryAreaTypeLink{}).StoryAreaType())
+
+	assert.Implements(t, (*StoryAreaType)(nil), &StoryAreaTypeWeather{})
+	assert.Equal(t, StoryAreaWeather, (&StoryAreaTypeWeather{}).StoryAreaType())
+
+	assert.Implements(t, (*StoryAreaType)(nil), &StoryAreaTypeUniqueGift{})
+	assert.Equal(t, StoryAreaUniqueGift, (&StoryAreaTypeUniqueGift{}).StoryAreaType())
+
 	assert.Implements(t, (*ReactionType)(nil), &ReactionTypeEmoji{})
 	assert.Equal(t, ReactionEmoji, (&ReactionTypeEmoji{}).ReactionType())
 
@@ -93,6 +107,12 @@ func TestTypesInterfaces(t *testing.T) {
 
 	assert.Implements(t, (*ReactionType)(nil), &ReactionTypePaid{})
 	assert.Equal(t, ReactionPaid, (&ReactionTypePaid{}).ReactionType())
+
+	assert.Implements(t, (*OwnedGift)(nil), &OwnedGiftRegular{})
+	assert.Equal(t, GiftTypeRegular, (&OwnedGiftRegular{}).GiftType())
+
+	assert.Implements(t, (*OwnedGift)(nil), &OwnedGiftUnique{})
+	assert.Equal(t, GiftTypeUnique, (&OwnedGiftUnique{}).GiftType())
 
 	assert.Implements(t, (*BotCommandScope)(nil), &BotCommandScopeDefault{})
 	assert.Equal(t, ScopeTypeDefault, (&BotCommandScopeDefault{}).ScopeType())
@@ -153,6 +173,18 @@ func TestTypesInterfaces(t *testing.T) {
 
 	assert.Implements(t, (*InputPaidMedia)(nil), &InputPaidMediaVideo{})
 	assert.Equal(t, PaidMediaTypeVideo, (&InputPaidMediaVideo{}).MediaType())
+
+	assert.Implements(t, (*InputProfilePhoto)(nil), &InputProfilePhotoStatic{})
+	assert.Equal(t, PhotoTypeStatic, (&InputProfilePhotoStatic{}).ProfilePhotoType())
+
+	assert.Implements(t, (*InputProfilePhoto)(nil), &InputProfilePhotoAnimated{})
+	assert.Equal(t, PhotoTypeAnimated, (&InputProfilePhotoAnimated{}).ProfilePhotoType())
+
+	assert.Implements(t, (*InputStoryContent)(nil), &InputStoryContentPhoto{})
+	assert.Equal(t, StoryTypePhoto, (&InputStoryContentPhoto{}).StoryType())
+
+	assert.Implements(t, (*InputStoryContent)(nil), &InputStoryContentVideo{})
+	assert.Equal(t, StoryTypeVideo, (&InputStoryContentVideo{}).StoryType())
 
 	assert.Implements(t, (*InlineQueryResult)(nil), &InlineQueryResultArticle{})
 	assert.Equal(t, ResultTypeArticle, (&InlineQueryResultArticle{}).ResultType())
@@ -240,6 +272,9 @@ func TestTypesInterfaces(t *testing.T) {
 
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerUser{})
 	assert.Equal(t, PartnerTypeUser, (&TransactionPartnerUser{}).PartnerType())
+
+	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerChat{})
+	assert.Equal(t, PartnerTypeChat, (&TransactionPartnerChat{}).PartnerType())
 
 	assert.Implements(t, (*TransactionPartner)(nil), &TransactionPartnerAffiliateProgram{})
 	assert.Equal(t, PartnerTypeAffiliateProgram, (&TransactionPartnerAffiliateProgram{}).PartnerType())
@@ -362,7 +397,7 @@ func Test_chatMemberData_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c.Data)
+			assert.Equal(t, tt.data, c.Data)
 		})
 	}
 }
@@ -390,7 +425,7 @@ func TestChatMember_MemberUser(t *testing.T) {
 	}
 
 	for i, cm := range members {
-		assert.EqualValues(t, User{ID: int64(i) + 1}, cm.MemberUser())
+		assert.Equal(t, User{ID: int64(i) + 1}, cm.MemberUser())
 	}
 }
 
@@ -410,7 +445,7 @@ func TestChatMemberUpdated_UnmarshalJSON(t *testing.T) {
 		cmu := &ChatMemberUpdated{}
 		err = cmu.UnmarshalJSON(jsonData)
 		require.NoError(t, err)
-		assert.EqualValues(t, expectedCMU, cmu)
+		assert.Equal(t, expectedCMU, cmu)
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -474,7 +509,7 @@ func Test_menuButtonData_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, m.Data)
+			assert.Equal(t, tt.data, m.Data)
 		})
 	}
 }
@@ -733,7 +768,13 @@ func TestTypesConstants(t *testing.T) {
 			MemberStatusLeft, MemberStatusBanned,
 		},
 		{
+			StoryAreaLocation, StoryAreaSuggestedReaction, StoryAreaLink, StoryAreaWeather, StoryAreaUniqueGift,
+		},
+		{
 			ReactionEmoji, ReactionCustomEmoji, ReactionPaid,
+		},
+		{
+			GiftTypeRegular, GiftTypeUnique,
 		},
 		{
 			ScopeTypeDefault, ScopeTypeAllPrivateChats, ScopeTypeAllGroupChats, ScopeTypeAllChatAdministrators,
@@ -750,6 +791,9 @@ func TestTypesConstants(t *testing.T) {
 		},
 		{
 			PaidMediaTypePreview, PaidMediaTypePhoto, PaidMediaTypeVideo,
+		},
+		{
+			PhotoTypeStatic, PhotoTypeAnimated,
 		},
 		{
 			StickerTypeRegular, StickerTypeMask, StickerTypeCustomEmoji,
@@ -776,8 +820,12 @@ func TestTypesConstants(t *testing.T) {
 			WithdrawalStatePending, WithdrawalStateSucceeded, WithdrawalStateFailed,
 		},
 		{
-			PartnerTypeUser, PartnerTypeAffiliateProgram, PartnerTypeFragment, PartnerTypeTelegramAds,
+			PartnerTypeUser, PartnerTypeChat, PartnerTypeAffiliateProgram, PartnerTypeFragment, PartnerTypeTelegramAds,
 			PartnerTypeTelegramApi, PartnerTypeOther,
+		},
+		{
+			TransactionTypeInvoicePayment, TransactionTypePaidMediaPayment, TransactionTypeGiftPurchase,
+			TransactionTypePremiumPurchase, TransactionTypeBusinessAccountTransfer,
 		},
 		{
 			ElementTypePersonalDetails, ElementTypePassport, ElementTypeDriverLicense, ElementTypeIdentityCard,
@@ -1039,7 +1087,7 @@ func TestUpdate_Context(t *testing.T) {
 
 	assert.NotNil(t, u.Context())
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cu := u.WithContext(ctx)
 	assert.Equal(t, ctx, cu.Context())
 	assert.Equal(t, u.UpdateID, cu.UpdateID)
@@ -1086,7 +1134,7 @@ func Test_ChatFullInfo_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1137,7 +1185,7 @@ func Test_ExternalReplyInfo_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, e)
+			assert.Equal(t, tt.data, e)
 		})
 	}
 }
@@ -1179,7 +1227,7 @@ func Test_CallbackQuery_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1230,7 +1278,7 @@ func Test_ReactionCount_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1291,7 +1339,7 @@ func Test_MessageReactionUpdated_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, m)
+			assert.Equal(t, tt.data, m)
 		})
 	}
 }
@@ -1342,7 +1390,7 @@ func Test_ChatBoost_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1393,7 +1441,7 @@ func Test_ChatBoostRemoved_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1444,7 +1492,7 @@ func Test_BackgroundTypeFill_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }
@@ -1494,7 +1542,7 @@ func Test_ChatBackground_UnmarshalJSON(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.EqualValues(t, tt.data, c)
+			assert.Equal(t, tt.data, c)
 		})
 	}
 }

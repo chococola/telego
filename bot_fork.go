@@ -42,8 +42,8 @@ func (b *Bot) PrepareRawRequest(parameters any) (*ta.RequestData, error) {
 }
 
 // PerformRawRequest - part of performRequest method
-func (b *Bot) PerformRawRequest(methodName string, data *ta.RequestData, vs ...any) error {
-	resp, err := b.callRawRequest(methodName, data)
+func (b *Bot) PerformRawRequest(ctx context.Context, methodName string, data *ta.RequestData, vs ...any) error {
+	resp, err := b.callRawRequest(ctx, methodName, data)
 	if err != nil {
 		b.log.Errorf("Execution error %s: %s", methodName, err)
 		return fmt.Errorf("internal execution: %w", err)
@@ -76,7 +76,7 @@ func (b *Bot) PerformRawRequest(methodName string, data *ta.RequestData, vs ...a
 }
 
 // part of constructAndCallRequest
-func (b *Bot) callRawRequest(methodName string, data *ta.RequestData) (*ta.Response, error) {
+func (b *Bot) callRawRequest(ctx context.Context, methodName string, data *ta.RequestData) (*ta.Response, error) {
 	var url string
 	if b.useTestServerPath {
 		url = b.apiURL + botPathPrefix + b.token + "/test/" + methodName
@@ -84,7 +84,7 @@ func (b *Bot) callRawRequest(methodName string, data *ta.RequestData) (*ta.Respo
 		url = b.apiURL + botPathPrefix + b.token + "/" + methodName
 	}
 
-	resp, err := b.api.Call(url, data)
+	resp, err := b.api.Call(ctx, url, data)
 	if err != nil {
 		return nil, fmt.Errorf("request call: %w", err)
 	}

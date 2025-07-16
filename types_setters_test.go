@@ -82,6 +82,7 @@ func TestKeyboardButton_Setters(t *testing.T) {
 
 func TestKeyboardButtonRequestUsers_Setters(t *testing.T) {
 	k := (&KeyboardButtonRequestUsers{}).
+		WithRequestID(3).
 		WithUserIsBot(true).
 		WithUserIsPremium(true).
 		WithMaxQuantity(1).
@@ -90,6 +91,7 @@ func TestKeyboardButtonRequestUsers_Setters(t *testing.T) {
 		WithRequestPhoto(true)
 
 	assert.Equal(t, &KeyboardButtonRequestUsers{
+		RequestID:       3,
 		UserIsBot:       ToPtr(true),
 		UserIsPremium:   ToPtr(true),
 		MaxQuantity:     1,
@@ -101,6 +103,7 @@ func TestKeyboardButtonRequestUsers_Setters(t *testing.T) {
 
 func TestKeyboardButtonRequestChat_Setters(t *testing.T) {
 	k := (&KeyboardButtonRequestChat{}).
+		WithRequestID(2).
 		WithChatIsChannel().
 		WithChatIsForum(true).
 		WithChatHasUsername(true).
@@ -113,6 +116,7 @@ func TestKeyboardButtonRequestChat_Setters(t *testing.T) {
 		WithRequestPhoto(true)
 
 	assert.Equal(t, &KeyboardButtonRequestChat{
+		RequestID:               2,
 		ChatIsChannel:           true,
 		ChatIsForum:             ToPtr(true),
 		ChatHasUsername:         ToPtr(true),
@@ -222,26 +226,30 @@ func TestInputMediaVideo_Setters(t *testing.T) {
 	i := (&InputMediaVideo{}).
 		WithMedia(testInputFile).
 		WithThumbnail(&testInputFile).
+		WithCover(&testInputFile).
+		WithStartTimestamp(1).
 		WithCaption("Caption").
 		WithParseMode("ParseMode").
 		WithCaptionEntities([]MessageEntity{{Type: "CaptionEntities"}}...).
 		WithShowCaptionAboveMedia().
-		WithWidth(1).
-		WithHeight(2).
-		WithDuration(3).
+		WithWidth(2).
+		WithHeight(3).
+		WithDuration(4).
 		WithSupportsStreaming().
 		WithHasSpoiler()
 
 	assert.Equal(t, &InputMediaVideo{
 		Media:                 testInputFile,
 		Thumbnail:             &testInputFile,
+		Cover:                 &testInputFile,
+		StartTimestamp:        1,
 		Caption:               "Caption",
 		ParseMode:             "ParseMode",
 		CaptionEntities:       []MessageEntity{{Type: "CaptionEntities"}},
 		ShowCaptionAboveMedia: true,
-		Width:                 1,
-		Height:                2,
-		Duration:              3,
+		Width:                 2,
+		Height:                3,
+		Duration:              4,
 		SupportsStreaming:     true,
 		HasSpoiler:            true,
 	}, i)
@@ -313,6 +321,82 @@ func TestInputMediaDocument_Setters(t *testing.T) {
 		ParseMode:                   "ParseMode",
 		CaptionEntities:             []MessageEntity{{Type: "CaptionEntities"}},
 		DisableContentTypeDetection: true,
+	}, i)
+}
+
+func TestInputPaidMediaPhoto_Setters(t *testing.T) {
+	i := (&InputPaidMediaPhoto{}).
+		WithMedia(testInputFile)
+
+	assert.Equal(t, &InputPaidMediaPhoto{
+		Media: testInputFile,
+	}, i)
+}
+
+func TestInputPaidMediaVideo_Setters(t *testing.T) {
+	i := (&InputPaidMediaVideo{}).
+		WithMedia(testInputFile).
+		WithThumbnail(&testInputFile).
+		WithCover(&testInputFile).
+		WithStartTimestamp(1).
+		WithWidth(2).
+		WithHeight(3).
+		WithDuration(4).
+		WithSupportsStreaming()
+
+	assert.Equal(t, &InputPaidMediaVideo{
+		Media:             testInputFile,
+		Thumbnail:         &testInputFile,
+		Cover:             &testInputFile,
+		StartTimestamp:    1,
+		Width:             2,
+		Height:            3,
+		Duration:          4,
+		SupportsStreaming: true,
+	}, i)
+}
+
+func TestInputProfilePhotoStatic_Setters(t *testing.T) {
+	i := (&InputProfilePhotoStatic{}).
+		WithPhoto(testInputFile)
+
+	assert.Equal(t, &InputProfilePhotoStatic{
+		Photo: testInputFile,
+	}, i)
+}
+
+func TestInputProfilePhotoAnimated_Setters(t *testing.T) {
+	i := (&InputProfilePhotoAnimated{}).
+		WithAnimation(testInputFile).
+		WithMainFrameTimestamp(1.0)
+
+	assert.Equal(t, &InputProfilePhotoAnimated{
+		Animation:          testInputFile,
+		MainFrameTimestamp: 1.0,
+	}, i)
+}
+
+func TestInputStoryContentPhoto_Setters(t *testing.T) {
+	i := (&InputStoryContentPhoto{}).
+		WithPhoto(testInputFile)
+
+	assert.Equal(t, &InputStoryContentPhoto{
+		Photo: testInputFile,
+	}, i)
+}
+
+func TestInputStoryContentVideo_Setters(t *testing.T) {
+	i := (&InputStoryContentVideo{}).
+		WithVideo(testInputFile).
+		WithDuration(1.0).
+		WithCoverFrameTimestamp(2.0).
+		WithIsAnimation()
+
+	assert.Equal(t, &InputStoryContentVideo{
+		Video:               testInputFile,
+		Duration:            1.0,
+		CoverFrameTimestamp: 2.0,
+		IsAnimation:         true,
 	}, i)
 }
 
@@ -586,33 +670,41 @@ func TestInlineQueryResultDocument_Setters(t *testing.T) {
 func TestInlineQueryResultLocation_Setters(t *testing.T) {
 	i := (&InlineQueryResultLocation{}).
 		WithID("ID").
+		WithLatitude(1.0).
+		WithLongitude(2.0).
 		WithTitle("Title").
-		WithLivePeriod(1).
-		WithHeading(2).
-		WithProximityAlertRadius(3).
+		WithHorizontalAccuracy(3.0).
+		WithLivePeriod(4).
+		WithHeading(5).
+		WithProximityAlertRadius(6).
 		WithReplyMarkup(&InlineKeyboardMarkup{InlineKeyboard: [][]InlineKeyboardButton{{}}}).
 		WithInputMessageContent(&InputTextMessageContent{}).
 		WithThumbnailURL("ThumbnailURL").
-		WithThumbnailWidth(4).
-		WithThumbnailHeight(5)
+		WithThumbnailWidth(7).
+		WithThumbnailHeight(8)
 
 	assert.Equal(t, &InlineQueryResultLocation{
 		ID:                   "ID",
+		Latitude:             1.0,
+		Longitude:            2.0,
 		Title:                "Title",
-		LivePeriod:           1,
-		Heading:              2,
-		ProximityAlertRadius: 3,
+		HorizontalAccuracy:   3.0,
+		LivePeriod:           4,
+		Heading:              5,
+		ProximityAlertRadius: 6,
 		ReplyMarkup:          &InlineKeyboardMarkup{InlineKeyboard: [][]InlineKeyboardButton{{}}},
 		InputMessageContent:  &InputTextMessageContent{},
 		ThumbnailURL:         "ThumbnailURL",
-		ThumbnailWidth:       4,
-		ThumbnailHeight:      5,
+		ThumbnailWidth:       7,
+		ThumbnailHeight:      8,
 	}, i)
 }
 
 func TestInlineQueryResultVenue_Setters(t *testing.T) {
 	i := (&InlineQueryResultVenue{}).
 		WithID("ID").
+		WithLatitude(1.0).
+		WithLongitude(2.0).
 		WithTitle("Title").
 		WithAddress("Address").
 		WithFoursquareID("FoursquareID").
@@ -622,11 +714,13 @@ func TestInlineQueryResultVenue_Setters(t *testing.T) {
 		WithReplyMarkup(&InlineKeyboardMarkup{InlineKeyboard: [][]InlineKeyboardButton{{}}}).
 		WithInputMessageContent(&InputTextMessageContent{}).
 		WithThumbnailURL("ThumbnailURL").
-		WithThumbnailWidth(1).
-		WithThumbnailHeight(2)
+		WithThumbnailWidth(3).
+		WithThumbnailHeight(4)
 
 	assert.Equal(t, &InlineQueryResultVenue{
 		ID:                  "ID",
+		Latitude:            1.0,
+		Longitude:           2.0,
 		Title:               "Title",
 		Address:             "Address",
 		FoursquareID:        "FoursquareID",
@@ -636,8 +730,8 @@ func TestInlineQueryResultVenue_Setters(t *testing.T) {
 		ReplyMarkup:         &InlineKeyboardMarkup{InlineKeyboard: [][]InlineKeyboardButton{{}}},
 		InputMessageContent: &InputTextMessageContent{},
 		ThumbnailURL:        "ThumbnailURL",
-		ThumbnailWidth:      1,
-		ThumbnailHeight:     2,
+		ThumbnailWidth:      3,
+		ThumbnailHeight:     4,
 	}, i)
 }
 
@@ -886,19 +980,27 @@ func TestInputTextMessageContent_Setters(t *testing.T) {
 
 func TestInputLocationMessageContent_Setters(t *testing.T) {
 	i := (&InputLocationMessageContent{}).
-		WithLivePeriod(1).
-		WithHeading(1).
-		WithProximityAlertRadius(2)
+		WithLatitude(1.0).
+		WithLongitude(1.0).
+		WithHorizontalAccuracy(2.0).
+		WithLivePeriod(3).
+		WithHeading(4).
+		WithProximityAlertRadius(5)
 
 	assert.Equal(t, &InputLocationMessageContent{
-		LivePeriod:           1,
-		Heading:              1,
-		ProximityAlertRadius: 2,
+		Latitude:             1.0,
+		Longitude:            1.0,
+		HorizontalAccuracy:   2.0,
+		LivePeriod:           3,
+		Heading:              4,
+		ProximityAlertRadius: 5,
 	}, i)
 }
 
 func TestInputVenueMessageContent_Setters(t *testing.T) {
 	i := (&InputVenueMessageContent{}).
+		WithLatitude(6.0).
+		WithLongitude(1.0).
 		WithTitle("Title").
 		WithAddress("Address").
 		WithFoursquareID("FoursquareID").
@@ -907,6 +1009,8 @@ func TestInputVenueMessageContent_Setters(t *testing.T) {
 		WithGooglePlaceType("GooglePlaceType")
 
 	assert.Equal(t, &InputVenueMessageContent{
+		Latitude:        6.0,
+		Longitude:       1.0,
 		Title:           "Title",
 		Address:         "Address",
 		FoursquareID:    "FoursquareID",

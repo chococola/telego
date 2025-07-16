@@ -82,6 +82,9 @@ var typeStructsSetters = []string{
 	"InputMediaPhoto",
 	"InputMediaVideo",
 
+	"InputPaidMediaPhoto",
+	"InputPaidMediaVideo",
+
 	"InputTextMessageContent",
 	"InputLocationMessageContent",
 	"InputVenueMessageContent",
@@ -89,6 +92,12 @@ var typeStructsSetters = []string{
 	"InputInvoiceMessageContent",
 
 	"InputSticker",
+
+	"InputProfilePhotoStatic",
+	"InputProfilePhotoAnimated",
+
+	"InputStoryContentPhoto",
+	"InputStoryContentVideo",
 }
 
 var typeStructsNoPointerSetters = []string{
