@@ -22,7 +22,7 @@ type (\w+) struct {
 }
 `
 
-const fieldPattern = "(\\w+) ([\\*A-Za-z\\[\\]]+) `json:\"(\\w+)"
+const fieldPattern = "(\\w+) ([\\*A-Za-z0-9\\[\\]]+) `json:\"(\\w+)"
 
 var (
 	typeStructRegexp = regexp.MustCompile(preparePattern(typeStructPattern))
@@ -59,6 +59,9 @@ func generateSetters(typesData string, desiredStructs []string) tgSetters {
 
 			if (strings.HasPrefix(setter.structType, "InlineQueryResult") ||
 				strings.HasPrefix(setter.structType, "InputMedia") ||
+				strings.HasPrefix(setter.structType, "InputPaidMedia") ||
+				strings.HasPrefix(setter.structType, "InputProfilePhoto") ||
+				strings.HasPrefix(setter.structType, "InputStoryContent") ||
 				setter.structType == "MenuButtonWebApp") &&
 				setter.fieldName == "Type" {
 				continue
@@ -142,7 +145,7 @@ func writeSetters(file *os.File, setters tgSetters, receiverDefault bool, noPoin
 		if setter.fieldType != "bool" {
 			value := firstToLower(setter.fieldName)
 			if convertToPtr {
-				value = "ToPtr(" + value + ")"
+				value = "&" + value
 			}
 
 			data.WriteString(fmt.Sprintf("\t%s.%s = %s\n", r, setter.fieldName, value))

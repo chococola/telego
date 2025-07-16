@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
+
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/chococola/telego"
 )
@@ -30,15 +31,15 @@ func main() {
 	})
 
 	// Create a common webhook serve mux (or another custom server) for all bots
-	mux := &http.ServeMux{}
+	app := fiber.New()
 
 	// Get updates chan from webhook with respect to webhook URL
 	// Note: Each bot should use the same webhook serve mux (or another custom server)
-	updates1, _ := bot1.UpdatesViaWebhook(ctx, telego.WebhookHTTPServeMux(mux, "POST /bot1", bot1.SecretToken()))
-	updates2, _ := bot2.UpdatesViaWebhook(ctx, telego.WebhookHTTPServeMux(mux, "POST /bot2", bot2.SecretToken()))
+	updates1, _ := bot1.UpdatesViaWebhook(ctx, WebhookFiber(app, "/bot1", bot1.SecretToken()))
+	updates2, _ := bot2.UpdatesViaWebhook(ctx, WebhookFiber(app, "/bot2", bot2.SecretToken()))
 
 	// Start server for receiving requests from the Telegram
-	go func() { _ = http.ListenAndServe(":443", mux) }()
+	go func() { _ = app.Listen(":443") }()
 
 	// Loop through all updates when they came
 	go func() {
@@ -48,5 +49,23 @@ func main() {
 	}()
 	for update := range updates2 {
 		fmt.Printf("Update 2: %+v\n", update)
+	}
+}
+
+// WebhookFiber returns a fiber handler for update webhook
+func WebhookFiber(router fiber.Router, path string, secretToken string) func(handler telego.WebhookHandler) error {
+	return func(handler telego.WebhookHandler) error {
+		router.Post(path, func(fCtx fiber.Ctx) error {
+			if secretToken != string(fCtx.Request().Header.Peek(telego.WebhookSecretTokenHeader)) {
+				return fCtx.SendStatus(fiber.StatusUnauthorized)
+			}
+
+			if err := handler(fCtx.Context(), fCtx.Body()); err != nil {
+				return fCtx.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			return fCtx.SendStatus(fiber.StatusOK)
+		})
+		return nil
 	}
 }

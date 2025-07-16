@@ -2,6 +2,8 @@ package telego
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"testing"
 
@@ -100,7 +102,8 @@ func TestNewBot(t *testing.T) {
 
 		t.Run("success", func(t *testing.T) {
 			expectedResp := &ta.Response{
-				Ok: true,
+				Ok:     true,
+				Result: json.RawMessage(`{}`),
 			}
 
 			constructor.EXPECT().
@@ -109,11 +112,15 @@ func TestNewBot(t *testing.T) {
 				Times(1)
 
 			caller.EXPECT().
-				Call(defaultBotAPIServer+botPathPrefix+token+"/getMe", expectedData).
+				Call(t.Context(), defaultBotAPIServer+botPathPrefix+token+"/getMe", expectedData).
 				Return(expectedResp, nil).
 				Times(1)
 
-			bot, err := NewBot(token, WithHealthCheck(), WithAPICaller(caller), WithRequestConstructor(constructor))
+			bot, err := NewBot(token,
+				WithAPICaller(caller),
+				WithRequestConstructor(constructor),
+				WithHealthCheck(t.Context()),
+			)
 
 			require.NoError(t, err)
 			assert.NotNil(t, bot)
@@ -131,11 +138,15 @@ func TestNewBot(t *testing.T) {
 				Times(1)
 
 			caller.EXPECT().
-				Call(defaultBotAPIServer+botPathPrefix+token+"/getMe", expectedData).
+				Call(t.Context(), defaultBotAPIServer+botPathPrefix+token+"/getMe", expectedData).
 				Return(expectedResp, nil).
 				Times(1)
 
-			bot, err := NewBot(token, WithHealthCheck(), WithAPICaller(caller), WithRequestConstructor(constructor))
+			bot, err := NewBot(token,
+				WithAPICaller(caller),
+				WithRequestConstructor(constructor),
+				WithHealthCheck(t.Context()),
+			)
 
 			require.Error(t, err)
 			assert.Nil(t, bot)
@@ -148,6 +159,14 @@ func TestBot_Token(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, token, bot.Token())
+}
+
+func TestBot_SecretToken(t *testing.T) {
+	bot, err := NewBot(token)
+	require.NoError(t, err)
+
+	hash := sha256.Sum256([]byte(token))
+	assert.Equal(t, hex.EncodeToString(hash[:]), bot.SecretToken())
 }
 
 func TestBot_Logger(t *testing.T) {
@@ -420,11 +439,11 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(url, expectedData).
+			Call(t.Context(), url, expectedData).
 			Return(expectedResp, nil).
 			Times(1)
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, params)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, params)
 		require.NoError(t, err)
 		assert.Equal(t, expectedResp, resp)
 	})
@@ -435,7 +454,7 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 			Return(nil, errTest).
 			Times(1)
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, params)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, params)
 		require.ErrorIs(t, err, errTest)
 		assert.Nil(t, resp)
 	})
@@ -460,11 +479,11 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(url, expectedDataFile).
+			Call(t.Context(), url, expectedDataFile).
 			Return(expectedResp, nil).
 			Times(1)
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, paramsFile)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, paramsFile)
 		require.NoError(t, err)
 		assert.Equal(t, expectedResp, resp)
 	})
@@ -480,7 +499,7 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 			Return(nil, errTest).
 			Times(1)
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, paramsFile)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, paramsFile)
 		require.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -488,7 +507,7 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 	t.Run("error_multipart_params", func(t *testing.T) {
 		notStruct := notStructParamsWithFile("test")
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, &notStruct)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, &notStruct)
 		require.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -500,11 +519,11 @@ func TestBot_constructAndCallRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(url, expectedData).
+			Call(t.Context(), url, expectedData).
 			Return(nil, errTest).
 			Times(1)
 
-		resp, err := m.Bot.constructAndCallRequest(methodName, params)
+		resp, err := m.Bot.constructAndCallRequest(t.Context(), methodName, params)
 		require.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -529,14 +548,14 @@ func TestBot_performRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(gomock.Any(), gomock.Any()).
+			Call(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&ta.Response{
 				Ok:     true,
 				Result: bytes.NewBufferString("1").Bytes(),
 				Error:  nil,
 			}, nil)
 
-		err := m.Bot.performRequest(methodName, params, &result)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &result)
 		require.NoError(t, err)
 		assert.Equal(t, 1, result)
 	})
@@ -551,14 +570,14 @@ func TestBot_performRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(gomock.Any(), gomock.Any()).
+			Call(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&ta.Response{
 				Ok:     true,
 				Result: bytes.NewBufferString("true").Bytes(),
 				Error:  nil,
 			}, nil)
 
-		err := m.Bot.performRequest(methodName, params, &result1, &result2)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &result1, &result2)
 		require.NoError(t, err)
 		assert.Equal(t, 0, result1)
 		assert.True(t, result2)
@@ -573,14 +592,14 @@ func TestBot_performRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(gomock.Any(), gomock.Any()).
+			Call(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&ta.Response{
 				Ok:     false,
 				Result: nil,
 				Error:  &ta.Error{},
 			}, nil)
 
-		err := m.Bot.performRequest(methodName, params, &result)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &result)
 		require.Error(t, err)
 	})
 
@@ -592,7 +611,7 @@ func TestBot_performRequest(t *testing.T) {
 			Return(nil, errTest).
 			Times(1)
 
-		err := m.Bot.performRequest(methodName, params, &result)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &result)
 		require.Error(t, err)
 	})
 
@@ -603,7 +622,7 @@ func TestBot_performRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(gomock.Any(), gomock.Any()).
+			Call(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&ta.Response{
 				Ok:     true,
 				Result: bytes.NewBufferString("1").Bytes(),
@@ -611,9 +630,9 @@ func TestBot_performRequest(t *testing.T) {
 			}, nil)
 
 		var stringResult string
-		err := m.Bot.performRequest(methodName, params, &stringResult)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &stringResult)
 		require.Error(t, err)
-		assert.Equal(t, "", stringResult)
+		assert.Empty(t, stringResult)
 	})
 
 	t.Run("error_warning", func(t *testing.T) {
@@ -625,14 +644,14 @@ func TestBot_performRequest(t *testing.T) {
 			Times(1)
 
 		m.MockAPICaller.EXPECT().
-			Call(gomock.Any(), gomock.Any()).
+			Call(gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(&ta.Response{
 				Ok:     true,
 				Result: bytes.NewBufferString("1").Bytes(),
 				Error:  &ta.Error{ErrorCode: 1},
 			}, nil)
 
-		err := m.Bot.performRequest(methodName, params, &result)
+		err := m.Bot.performRequest(t.Context(), methodName, params, &result)
 		assert.Equal(t, &ta.Error{ErrorCode: 1}, err)
 		assert.Equal(t, 1, result)
 	})
@@ -675,6 +694,6 @@ func TestToPtr(t *testing.T) {
 	assert.True(t, *ToPtr(true))
 	assert.False(t, *ToPtr(false))
 
-	assert.Equal(t, "", *ToPtr(""))
+	assert.Empty(t, *ToPtr(""))
 	assert.Equal(t, "a", *ToPtr("a"))
 }

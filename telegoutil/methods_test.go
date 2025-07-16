@@ -19,7 +19,7 @@ var (
 	text4 = "test4"
 	text5 = "test5"
 
-	textNonASCII = "Hello, 世界"
+	textNonASCII = "Hello, 世界" //nolint:gosmopolitan
 
 	format1 = "%s %s"
 
@@ -125,6 +125,35 @@ func TestMessagef(t *testing.T) {
 	m := Messagef(id1, format1, text1, text2)
 	assert.Equal(t, id1, m.ChatID)
 	assert.Equal(t, text1+" "+text2, m.Text)
+}
+
+func TestEditMessageText(t *testing.T) {
+	m := EditMessageText(id1, number1, text1)
+	assert.Equal(t, id1, m.ChatID)
+	assert.Equal(t, number1, m.MessageID)
+	assert.Equal(t, text1, m.Text)
+}
+
+func TestEditMessageCaption(t *testing.T) {
+	m := EditMessageCaption(id1, number1, text1)
+	assert.Equal(t, id1, m.ChatID)
+	assert.Equal(t, number1, m.MessageID)
+	assert.Equal(t, text1, m.Caption)
+}
+
+func TestEditMessageMedia(t *testing.T) {
+	m := EditMessageMedia(id1, number1, mediaGroups[0])
+	assert.Equal(t, id1, m.ChatID)
+	assert.Equal(t, number1, m.MessageID)
+	assert.Equal(t, mediaGroups[0], m.Media)
+}
+
+func TestEditMessageReplyMarkup(t *testing.T) {
+	markup := &telego.InlineKeyboardMarkup{}
+	m := EditMessageReplayMarkup(id1, number1, markup)
+	assert.Equal(t, id1, m.ChatID)
+	assert.Equal(t, number1, m.MessageID)
+	assert.Equal(t, markup, m.ReplyMarkup)
 }
 
 func TestMessageWithEntities(t *testing.T) {
