@@ -1,6 +1,7 @@
 package telego
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
